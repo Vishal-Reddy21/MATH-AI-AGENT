@@ -1,0 +1,152 @@
+from google import genai
+from sympy import sympify, solve, symbols, Eq, simplify
+import re
+client = genai.Client(api_key="AIzaSyBS3_RKZVD1rXXktCpIID4L4FCQBqch6Nc")
+
+x = symbols('x')
+
+memory = {
+    "history": [],
+    "last_result": None
+}
+
+def add_memory(user_input, result):
+    memory["history"].append({"q": user_input, "a": str(result)})
+    memory["last_result"] = result
+
+def get_last_result():
+    return memory["last_result"]
+
+def get_history():
+    return memory["history"][-5:]  # last 5 interactions
+
+
+def clean(expr):
+    if not expr:
+        return None
+
+    expr = str(expr)
+
+    expr = expr.replace("`", "")
+    expr = expr.replace("```", "")
+    expr = expr.replace("$", "")
+
+    expr = expr.replace("sympy.Integer", "")
+    expr = expr.replace("sympy.", "")
+
+    expr = re.sub(r"[^0-9a-zA-Z+\-*/=(). ]", "", expr)
+
+    return expr.strip()
+
+def convert(user_input):
+
+    last = get_last_result()
+
+    prompt = f"""
+Convert the input into ONLY a valid math expression.
+
+Rules:
+- no explanation
+- no text
+- use ** for power
+- ONLY math expression
+- If user refers to previous result (like "that", "result"), use {last}
+
+Examples:
+"add 5 to that" → {last} + 5
+
+Input:
+{user_input}
+"""
+
+    try:
+        response = client.models.generate_content(
+            model="gemini-flash-lite-latest",
+            contents=prompt
+        )
+
+        if not response.candidates:
+            return None
+
+        part = response.candidates[0].content.parts[0]
+        expr = getattr(part, "text", None)
+
+        return clean(expr)
+
+    except Exception as e:
+        print("Gemini Error:", e)
+        return None
+
+def execute(expr):
+    try:
+        expr = clean(expr)
+
+        if not expr:
+            return "No valid expression"
+
+        expr = expr.replace("^", "**")
+
+        # 🔥 replace "result" keyword manually
+        last = get_last_result()
+        if last is not None:
+            expr = expr.replace("result", str(last))
+
+        # equation handling
+        if "=" in expr:
+            left, right = expr.split("=")
+            eq = Eq(sympify(left), sympify(right))
+            return solve(eq, x)
+
+        return simplify(sympify(expr))
+
+    except Exception as e:
+        return f"Execution Error: {e}"
+def agent(user_input):
+
+    print("\n📥 Input:", user_input)
+
+    expr = convert(user_input)
+    print("🧠 Gemini:", expr)
+
+    result = execute(expr)
+    add_memory(user_input, result)
+
+    return result
+
+print("🔥 AI MATH AGENT WITH MEMORY")
+
+while True:
+    user_input = input("\nYou: ")
+
+    if user_input.lower() == "exit":
+        break
+
+    print("Bot:", agent(user_input))
+OUTPUT:
+🔥 AI MATH AGENT WITH MEMORY
+
+You: add five and three
+
+📥 Input: add five and three
+🧠 Gemini: 5 + 3
+Bot: 8
+
+You: square the result then add thirty six 
+
+📥 Input: square the result then add thirty six 
+🧠 Gemini: 8**2 + 36
+Bot: 100
+
+You: add sixty nine to that then square root the output
+
+📥 Input: add sixty nine to that then square root the output
+🧠 Gemini: sqrt(100 + 69)
+Bot: 13
+
+You: add seven to that then square the output
+
+📥 Input: add seven to that then square the output
+🧠 Gemini: (13 + 7)**2
+Bot: 400
+
+You: exit
