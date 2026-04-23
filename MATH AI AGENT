@@ -86,7 +86,7 @@ def execute(expr):
 
         expr = expr.replace("^", "**")
 
-        # 🔥 replace "result" keyword manually
+
         last = get_last_result()
         if last is not None:
             expr = expr.replace("result", str(last))
@@ -106,14 +106,14 @@ def agent(user_input):
     print("\n📥 Input:", user_input)
 
     expr = convert(user_input)
-    print("🧠 Gemini:", expr)
+    print(" Gemini:", expr)
 
     result = execute(expr)
     add_memory(user_input, result)
 
     return result
 
-print("🔥 AI MATH AGENT WITH MEMORY")
+print(" AI MATH AGENT WITH MEMORY")
 
 while True:
     user_input = input("\nYou: ")
@@ -123,30 +123,30 @@ while True:
 
     print("Bot:", agent(user_input))
 OUTPUT:
-🔥 AI MATH AGENT WITH MEMORY
+ AI MATH AGENT WITH MEMORY
 
 You: add five and three
 
-📥 Input: add five and three
-🧠 Gemini: 5 + 3
+ Input: add five and three
+ Gemini: 5 + 3
 Bot: 8
 
 You: square the result then add thirty six 
 
-📥 Input: square the result then add thirty six 
-🧠 Gemini: 8**2 + 36
+ Input: square the result then add thirty six 
+ Gemini: 8**2 + 36
 Bot: 100
 
 You: add sixty nine to that then square root the output
 
-📥 Input: add sixty nine to that then square root the output
-🧠 Gemini: sqrt(100 + 69)
+ Input: add sixty nine to that then square root the output
+ Gemini: sqrt(100 + 69)
 Bot: 13
 
 You: add seven to that then square the output
 
-📥 Input: add seven to that then square the output
-🧠 Gemini: (13 + 7)**2
+ Input: add seven to that then square the output
+Gemini: (13 + 7)**2
 Bot: 400
 
 You: exit
